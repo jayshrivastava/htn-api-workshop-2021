@@ -19,8 +19,8 @@ db = Database()
 
 class Book(db.Entity):
   _table_ = 'books'
-  id = PrimaryKey(int)
-  title = Required(str)
+  id = PrimaryKey(int,auto=True)
+  title = Required(str,unique=True)
   author = Required(str)
   rating = float
   pages = int

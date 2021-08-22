@@ -8,8 +8,8 @@ db = Database()
 
 class Book(db.Entity):
   _table_ = 'books'
-  id = PrimaryKey(int)
-  title = Required(str)
+  id = PrimaryKey(int,auto=True)
+  title = Required(str,unique=True)
   author = Required(str)
   rating = Required(float)
   pages = Required(int)
@@ -29,7 +29,8 @@ db.generate_mapping(create_tables=True)  # Create tables
 
 @db_session
 def create_book(id,title, author, rating, pages):
-  Book(id=id, title=title, author=author, rating=rating, pages=pages)
+  # the db will assign ids for us
+  Book(title=title, author=author, rating=rating, pages=pages)
 
 # Read CSV Data and Create Books
 f = open("books.csv", "r")
