@@ -1,2 +1,0 @@
-Books Data: https://www.kaggle.com/jealousleopard/goodreadsbooks
-CockroachDB Pony: https://www.cockroachlabs.com/docs/stable/build-a-python-app-with-cockroachdb-pony.html
