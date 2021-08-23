@@ -19,11 +19,11 @@ db = Database()
 
 class Book(db.Entity):
   _table_ = 'books'
-  id = PrimaryKey(int)
-  title = Required(str)
+  id = PrimaryKey(int,auto=True)
+  title = Required(str,unique=True)
   author = Required(str)
-  rating = float
-  pages = int
+  rating = Required(float)
+  pages = Required(int)
 
 # SQLite
 # Store data in a file!
@@ -31,27 +31,50 @@ db_params = dict(provider='sqlite', filename='booksdb.sqlite', create_db=True) #
 
 # CockroachDB 
 # https://www.cockroachlabs.com/free-tier/
-# db_params = dict(provider='cockroach', user='jayant', host='free-tier.gcp-us-central1.cockroachlabs.cloud', port=26257, database='ample-lemur-3072.defaultdb', password=<INSERT_PASSWORD>)
-# Note: You may want to use a Replit environment variables to store the password and database name (see https://docs.replit.com/tutorials/08-storing-secrets-and-history). Note that os.getenv/os.envrion may not work outside of main.py.
+# db_params = dict(provider='cockroach', user='jayant', host='free-tier.gcp-us-central1.cockroachlabs.cloud', port=26257, database='ample-lemur-3072.defaultdb', os.getenv('db_password'))
+# Note: You will need to set the db_password environment variable in repl.it (see https://docs.replit.com/tutorials/08-storing-secrets-and-history). 
 
 sql_debug(True)  # Print all generated SQL queries to stdout
 db.bind(**db_params)  # Bind Database object to the real database
 db.generate_mapping(create_tables=True)  # Create tables
 
+# Helper functions!
 @db_session  # db_session decorator manages the transactions
-def db_create_book(id, title, author, rating, pages):
-  return Book(id, title, author, rating, pages).to_dict()
+def db_create_book(title, author, rating, pages):
+  return Book(title=title, author=author, rating=rating, pages=pages).to_dict()
 
 @db_session
 def db_get_all_books():
   return [book.to_dict() for book in Book.select()]
 
 @db_session 
-def db_get_book(id, title, author, rating, pages):
-  return Book(id, title, author, rating, pages).to_dict() 
+def db_get_book(title, author, rating, pages):
+  return Book(title, author, rating, pages).to_dict() 
 
-@app.route('/', methods=['GET'])
+@db_session 
+def db_filter_books(max_pages, min_rating):
+  if not max_pages:
+    max_pages = float('inf')
+  if not min_rating:
+    min_rating = float('-inf')
+  books_query = Book.select(lambda book: book.rating >= min_rating and book.pages <= max_pages)
+  return [book.to_dict() for book in books_query]
+
 @db_session
+def db_change_author(id, new_author):
+  book = Book.get(id=id)
+  book.author = new_author 
+  return book.to_dict()
+
+@db_session
+def db_delete_book(id):
+  book = Book.get(id=id)
+  book_dict = book.to_dict()
+  book.delete()
+  return book_dict
+
+# Routes!
+@app.route('/', methods=['GET'])
 def index():
     return jsonify(db_get_all_books())
 
@@ -63,10 +86,38 @@ def get_book(id):
      return jsonify({"error": "invalid id"})
   return jsonify(Book.get(id=id).to_dict())
 
+@app.route("/search", methods=['GET'])
+def search_books():
+  result = db_filter_books(int(request.args.get('max_pages')), int(request.args.get('min_rating')))
+  return jsonify(result)
+
+@app.route("/", methods=['POST'])
+def create_book():
+  new_book = request.json
+  try:
+    db_create_book(new_book['title'], new_book['author'], new_book['rating'], new_book['pages'])
+  except:
+    return jsonify({"error": "could not create this book"})
+  return jsonify(new_book)
+
+@app.route("/<id>", methods=['PUT'])
+def update_author(id):
+  try:
+    author = request.json['author']
+    return jsonify(db_change_author(id, author))
+  except:
+    return jsonify({"error": "could not update book"})
+
+@app.route("/<id>", methods=['DELETE'])
+def delete_book(id):
+  # try:
+    return jsonify(db_delete_book(id))
+  # except:
+  #   return jsonify({"error": "could not delete book"})
+
 """
 End of Part 7 Code
 """
-
 
 """
 Parts 2-5 - Building an API without a Database
