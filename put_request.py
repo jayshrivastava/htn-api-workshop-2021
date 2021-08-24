@@ -1,4 +1,5 @@
 import requests
+import json
 
 new_data = {
   'author': 'Robert L. Stevenson'
@@ -6,4 +7,4 @@ new_data = {
 
 response = requests.put('https://htn-api.jayantsh.repl.co/3', json = new_data)
 
-print(response.json())
+print(json.dumps(response.json(), indent=2))

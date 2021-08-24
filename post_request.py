@@ -1,4 +1,5 @@
 import requests
+import json
 
 book1 = {
   'id': 4,
@@ -18,4 +19,4 @@ book2 = {
 
 response = requests.post('https://htn-api.jayantsh.repl.co/', json = book1)
 
-print(response.json())
+print(json.dumps(response.json(), indent=2))
